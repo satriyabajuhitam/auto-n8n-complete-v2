@@ -131,13 +131,47 @@ check_domain() {
 install_base_dependencies() {
     echo ""
     echo "Updating tools and installing essentials... 🔄"
-    apt-get update -y > /dev/null
-    apt-get install -y dnsutils curl cron jq tar gzip python3-full python3-venv pipx net-tools bc postgresql-client
-    if [ $? -ne 0 ]; then
-        echo "❌ Failed to install packages. Check internet or apt sources!"
+    
+    # Switch to main Ubuntu archive to avoid azure.archive.ubuntu.com issues
+    sed -i 's/azure.archive.ubuntu.com/archive.ubuntu.com/g' /etc/apt/sources.list
+    
+    # Clean and update APT cache
+    apt-get clean
+    rm -rf /var/lib/apt/lists/*
+    
+    # Retry logic for apt-get update
+    for i in {1..3}; do
+        echo "Attempt $i of 3 to update package lists..."
+        if apt-get update -y; then
+            echo "✅ Package lists updated!"
+            break
+        else
+            echo "⚠️ Attempt $i failed. Retrying in 5 seconds..."
+            sleep 5
+        fi
+    done
+    if [ $i -eq 4 ]; then
+        echo "❌ Failed to update package lists after 3 attempts. Check network or apt sources!"
         exit 1
     fi
-    echo "✅ Essential tools, including PostgreSQL client, installed!"
+    
+    # Ensure universe repository is enabled
+    add-apt-repository universe -y
+    
+    # Retry logic for package installation
+    for i in {1..3}; do
+        echo "Attempt $i of 3 to install packages..."
+        if apt-get install -y dnsutils curl cron jq tar gzip python3-full python3-venv pipx net-tools bc postgresql-client; then
+            echo "✅ Essential tools, including PostgreSQL client, installed!"
+            return 0
+        else
+            echo "⚠️ Attempt $i failed. Retrying in 5 seconds..."
+            sleep 5
+        fi
+    done
+    echo "❌ Failed to install packages after 3 attempts. Check internet, apt sources, or disk space!"
+    echo "Run 'sudo apt-get install -y --debug dnsutils curl cron jq tar gzip python3-full python3-venv pipx net-tools bc postgresql-client' for detailed errors."
+    exit 1
 }
 
 # Install Docker and Docker Compose
