@@ -50,7 +50,7 @@ Ready to get your N8N superpower? Follow these simple steps:
 
 1.  **Connect to Your VPS:** Open your terminal and SSH into your server.
     ```bash
-    ssh your_user@your_server_ip
+    ssh user@your_server_ip
     ```
 
 2.  **Clone the Repository:** Grab the script from GitHub.
@@ -206,4 +206,4 @@ This project is open-sourced under the MIT License. See the `LICENSE` file for m
 
 ---
 
-Feel free to open issues or pull requests on the [GitHub repository](https://github.com/YOUR_USERNAME/YOUR_REPOSITORY_NAME) (replace with your repo link) if you have suggestions or encounter problems! Happy automating! 😊
+Feel free to open issues or pull requests on the [GitHub repository](https://github.com/satriyabajuhitam/auto-n8n-complete-v2) (replace with your repo link) if you have suggestions or encounter problems! Happy automating! 😊
