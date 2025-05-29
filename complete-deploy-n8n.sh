@@ -114,15 +114,42 @@ done
 # Check if domain resolves to server IP
 check_domain() {
     local domain=$1
-    local server_ip=$(hostname -I | awk '{print $1}' || curl -s --max-time 10 https://api.ipify.org)
+    # Try to get public IP using multiple methods
+    local server_ip
+    server_ip=$(curl -s --max-time 10 https://api.ipify.org)
     if [ -z "$server_ip" ]; then
-        echo "❌ Couldn't get server's public IP. Check your network!"
+        server_ip=$(hostname -I | awk '{print $1}' || echo "")
+        if [ -z "$server_ip" ]; then
+            echo "❌ Couldn't get server's public IP. Check your network or Azure NAT settings!"
+            return 1
+        fi
+    fi
+    echo "Server public IP detected: $server_ip"
+
+    # Resolve domain IP with retry for DNS issues
+    local domain_ip
+    for i in {1..3}; do
+        domain_ip=$(dig +short "$domain" A | head -n 1)
+        if [ -n "$domain_ip" ]; then
+            echo "Domain '$domain' resolves to: $domain_ip"
+            break
+        else
+            echo "⚠️ Attempt $i: Failed to resolve '$domain'. Retrying in 5 seconds..."
+            sleep 5
+        fi
+    done
+    if [ -z "$domain_ip" ]; then
+        echo "❌ Failed to resolve '$domain' after 3 attempts. Check DNS settings!"
         return 1
     fi
-    local domain_ip=$(dig +short "$domain" A)
+
+    # Compare IPs
     if [ "$domain_ip" = "$server_ip" ]; then
+        echo "✅ Domain '$domain' correctly points to server's public IP ($server_ip)"
         return 0
     else
+        echo "❌ Domain '$domain' resolves to '$domain_ip', but server IP is '$server_ip'."
+        echo "   Update your DNS A record for '$domain' to point to '$server_ip'."
         return 1
     fi
 }
